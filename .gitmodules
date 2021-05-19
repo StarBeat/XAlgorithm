@@ -1,3 +1,3 @@
-[submodule "dps/hana"]
-	path = dps/hana
+[submodule "3rd/hana"]
+	path = 3rd/hana
 	url = https://github.com/boostorg/hana.git
