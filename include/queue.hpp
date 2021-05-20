@@ -120,27 +120,8 @@ struct Queue
  private:
     const int _capacity;
     std::vector<T> _data;
-    std::atomic<int>_size;
-    std::atomic<int>_front;
-    std::atomic<int>_rear;
-};
-
-#include <shared_mutex>
-template<typename T>
-struct RWSpan
-{
-    void Set(T v)
-    {
-        std::unique_lock lock(_stmutex);
-        _vaule = v;
-    }
-    T& Get()
-    {
-        std::shared_lock lock(_stmutex);
-        return _vaule;
-    }
- private:
-    std::shared_timed_mutex _stmutex;
-    T _vaule;
+    std::atomic<int> _size;
+    std::atomic<int> _front;
+    std::atomic<int> _rear;
 };
 }  // namespace x::xalgorithm
