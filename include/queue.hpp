@@ -3,13 +3,20 @@
 */
 
 #pragma once
-#include<atomic>
-#include<thread>
+#include <atomic>
+#include <thread>
 #include <type_traits>
+#include <vector>
 
 namespace x::xalgorithm
 {
 template<typename T>
+concept WhereTisTrivial = requires()
+{
+    ::std::is_trivial_v<T>;
+};
+
+template<WhereTisTrivial T>
 struct Queue
 {
  public:
@@ -22,7 +29,7 @@ struct Queue
 
     explicit Queue(int capacity) : _capacity(capacity)
     {
-        static_assert(std::is_trivial_v<T>);
+        _data.reserve(capacity);
     }
 
     ~Queue() = default;
@@ -66,7 +73,7 @@ struct Queue
                 break;
             }
         }
-        _data[rear].store(in_value);
+        _data[rear] = in_value;
         ++_size;
         int excepted = -1;
         bool flag = _rear.compare_exchange_weak(excepted, (rear + 1) % _capacity);
@@ -103,7 +110,7 @@ struct Queue
                 break;
             }
         }
-        out_value = _data[front].load();
+        out_value = _data[front];
         --_size;
         int excepted = -1;
         bool flag = _front.compare_exchange_weak(excepted, (front + 1) % _capacity);
@@ -112,28 +119,28 @@ struct Queue
     }
  private:
     const int _capacity;
-    T[_capacity] _data;
+    std::vector<T> _data;
     std::atomic<int>_size;
     std::atomic<int>_front;
     std::atomic<int>_rear;
 };
-
-#include <shared_mutex>
-template<typename T>
-struct RWSpan
-{
-    void Set(T v)
-    {
-        std::unique_lock lock(_stmutex);
-        _vaule = v;
-    }
-    T& Get()
-    {
-        std::shared_lock lock(_stmutex);
-        return _vaule;
-    }
- private:
-    std::shared_timed_mutex _stmutex;
-    T _vaule;
-};
+//
+//#include <shared_mutex>
+//template<typename T>
+//struct RWSpan
+//{
+//    void Set(T v)
+//    {
+//        std::unique_lock lock(_stmutex);
+//        _vaule = v;
+//    }
+//    T& Get()
+//    {
+//        std::shared_lock lock(_stmutex);
+//        return _vaule;
+//    }
+// private:
+//    std::shared_timed_mutex _stmutex;
+//    T _vaule;
+//};
 }  // namespace x::xalgorithm
