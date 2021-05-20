@@ -3,31 +3,137 @@
 */
 
 #pragma once
-#include <queue>
-#include <shared_mutex>
+#include<atomic>
+#include<thread>
+#include <type_traits>
 
-namespace X::XAlgorithm
+namespace x::xalgorithm
 {
 template<typename T>
 struct Queue
 {
+ public:
+    enum Strategy : char
+    {
+        Enm_ABANDON,
+        Enm_FORCE,
+        Enm_YIELD,
+    };
+
+    explicit Queue(int capacity) : _capacity(capacity)
+    {
+        static_assert(std::is_trivial_v<T>);
+    }
+
+    ~Queue() = default;
+
+    bool IsFull()
+    {
+        return _size.load() == _capacity;
+    }
+
+    bool IsEmpty()
+    {
+        return _size.load() == 0;
+    }
+
+    bool Push(const T& in_value, Strategy strategy = Strategy::Enm_FORCE)
+    {
+        int rear = _rear.load();
+        while (true)
+        {
+            if (rear == -1 || IsFull())
+            {
+                switch (strategy)
+                {
+                case Strategy::Enm_YIELD:
+                    std::this_thread::yield();
+                case Strategy::Enm_FORCE:
+                    rear = _rear.load();
+                    continue;
+                }
+                return false;
+            }
+            if (_rear.compare_exchange_weak(rear, -1))
+            {
+                if (IsFull())
+                {
+                    int excepted = -1;
+                    bool flag = _rear.compare_exchange_weak(excepted, rear);
+                    assert(flag);
+                    continue;
+                }
+                break;
+            }
+        }
+        _data[rear].store(in_value);
+        ++_size;
+        int excepted = -1;
+        bool flag = _rear.compare_exchange_weak(excepted, (rear + 1) % _capacity);
+        assert(flag);
+        return true;
+    }
+
+    bool Pop(const T& out_value, Strategy strategy = Strategy::Enm_FORCE)
+    {
+        int front = _front.load();
+        while (true)
+        {
+            if (front == -1 || IsEmpty())
+            {
+                switch (strategy)
+                {
+                case Strategy::Enm_YIELD:
+                    std::this_thread::yield();
+                case Strategy::Enm_FORCE:
+                    front = _front.load();
+                    continue;
+                }
+                return false;
+            }
+            if (_front.compare_exchange_weak(front, -1))
+            {
+                if (IsEmpty())
+                {
+                    int excepted = -1;
+                    bool flag = _front.compare_exchange_weak(excepted, front);
+                    assert(flag);
+                    continue;
+                }
+                break;
+            }
+        }
+        out_value = _data[front].load();
+        --_size;
+        int excepted = -1;
+        bool flag = _front.compare_exchange_weak(excepted, (front + 1) % _capacity);
+        assert(flag);
+        return true;
+    }
  private:
-    std::queue<T> _queue;
+    const int _capacity;
+    T[_capacity] _data;
+    std::atomic<int>_size;
+    std::atomic<int>_front;
+    std::atomic<int>_rear;
 };
+
+#include <shared_mutex>
 template<typename T>
 struct RWSpan
 {
-    void set(T v)
+    void Set(T v)
     {
         std::unique_lock lock(_stmutex);
+        _vaule = v;
     }
-    T& get()
+    T& Get()
     {
         std::shared_lock lock(_stmutex);
-        return vaule;
+        return _vaule;
     }
  private:
     std::shared_timed_mutex _stmutex;
-    T vaule;
+    T _vaule;
 };
-}  // namespace X::XAlgorithm
+}  // namespace x::xalgorithm
