@@ -4,7 +4,7 @@
 
 #pragma once
 #include <atomic>
-#include <thread>
+#include <thread> // NOLINT
 #include <type_traits>
 #include <vector>
 
@@ -124,23 +124,23 @@ struct Queue
     std::atomic<int>_front;
     std::atomic<int>_rear;
 };
-//
-//#include <shared_mutex>
-//template<typename T>
-//struct RWSpan
-//{
-//    void Set(T v)
-//    {
-//        std::unique_lock lock(_stmutex);
-//        _vaule = v;
-//    }
-//    T& Get()
-//    {
-//        std::shared_lock lock(_stmutex);
-//        return _vaule;
-//    }
-// private:
-//    std::shared_timed_mutex _stmutex;
-//    T _vaule;
-//};
+
+#include <shared_mutex>
+template<typename T>
+struct RWSpan
+{
+    void Set(T v)
+    {
+        std::unique_lock lock(_stmutex);
+        _vaule = v;
+    }
+    T& Get()
+    {
+        std::shared_lock lock(_stmutex);
+        return _vaule;
+    }
+ private:
+    std::shared_timed_mutex _stmutex;
+    T _vaule;
+};
 }  // namespace x::xalgorithm
