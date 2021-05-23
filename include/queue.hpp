@@ -127,11 +127,6 @@ struct CircularCasQueue
     }
 #pragma region concept for std
 
-    void push(const T& v)
-    {
-        push(v, Strategy::Enm_FORCE);
-    }
-
     void push(T&& v)
     {
         push(std::move(v), Strategy::Enm_FORCE);
