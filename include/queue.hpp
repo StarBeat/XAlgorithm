@@ -132,6 +132,11 @@ struct CircularCasQueue
         push(std::move(v), Strategy::Enm_FORCE);
     }
 
+    void push(const T& v)
+    {
+        push(std::move(v), Strategy::Enm_FORCE);
+    }
+
     T& pop()
     {
         T* ret;
