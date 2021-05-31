@@ -3,10 +3,18 @@
 */
 #pragma once
 #include <shared_mutex>
-template<typename T>
+namespace x::xalgorithm::span
+{
+template<typename T> requires requires() { std::is_trivial_v<T>; }
 struct RWSpan
 {
-    void Set(T v)
+    void Set(T&& v)
+    {
+        std::unique_lock lock(_stmutex);
+        _vaule = v;
+    }
+
+    void Set(const T& v)
     {
         std::unique_lock lock(_stmutex);
         _vaule = v;
@@ -20,3 +28,4 @@ struct RWSpan
     std::shared_timed_mutex _stmutex;
     T _vaule;
 };
+}  // namespace x::xalgorithm::span
